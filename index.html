@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Expense Intelligence Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border-color: #e2e8f0;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 🔏 AUTH SCREEN */
+        .auth-container { 
+            background: var(--panel-bg); 
+            padding: 40px 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); 
+            width: 100%; 
+            max-width: 360px; 
+            text-align: center;
+        }
+        .auth-container h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; margin-top: 0; }
+        .auth-container p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+        input, textarea { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            border: 1px solid var(--border-color); border-radius: 10px; 
+            box-sizing: border-box; font-family: inherit; font-size: 14px;
+            transition: 0.2s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+
+        /* 📊 MAIN APP PANEL */
+        .container { 
+            background: var(--panel-bg); 
+            padding: 35px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05); 
+            width: 100%; 
+            max-width: 550px; 
+        }
+        
+        .header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .header-box h2 { margin: 0; font-size: 24px; font-weight: 700; }
+
+        .stat-card { 
+            background: linear-gradient(135deg, #4f46e5, #6366f1); 
+            color: white; padding: 20px; border-radius: 16px; 
+            text-align: center; margin-bottom: 25px;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+        }
+        .stat-number { font-size: 34px; font-weight: 700; margin-top: 5px; }
+        
+        .chart-box { width: 100%; max-width: 240px; margin: 0 auto 30px auto; }
+
+        textarea { height: 90px; resize: none; }
+
+        .btn-group { display: flex; gap: 12px; margin-top: 10px; }
+        button { 
+            flex: 1; color: white; border: none; padding: 14px; 
+            border-radius: 12px; font-size: 15px; cursor: pointer; 
+            font-weight: 600; font-family: inherit; transition: 0.2s; 
+        }
+        .btn-blue { background-color: var(--primary); }
+        .btn-blue:hover { background-color: var(--primary-hover); }
+        .btn-green { background-color: var(--success); }
+        .btn-green:hover { background-color: #059669; }
+        .btn-secondary { background-color: #f1f5f9; color: #475569; font-size: 13px; padding: 8px 14px; border-radius: 8px; flex: none; width: auto; }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+        .btn-orange { background-color: #ff922b; margin-top: 5px; width: 100%; }
+
+        .status { margin-top: 20px; font-weight: 500; text-align: center; color: var(--text-muted); font-size: 14px; }
+        
+        /* 🛍️ EXPENSE CARDS */
+        .expense-card { 
+            background: #ffffff; padding: 16px; border-radius: 14px; 
+            margin-top: 12px; border: 1px solid var(--border-color); 
+            display: flex; justify-content: space-between; align-items: center;
+            transition: 0.2s;
+        }
+        .expense-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .item-name { font-weight: 600; color: var(--text-main); font-size: 15px; }
+        .item-cat { font-size: 12px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; color: #475569; margin-top: 6px; display: inline-block; font-weight: 500; }
+        .item-right { display: flex; align-items: center; gap: 15px; }
+        .item-amt { font-size: 18px; font-weight: 700; color: #1e293b; }
+        
+        .btn-delete { background: none; border: none; color: #cbd5e1; font-size: 18px; cursor: pointer; padding: 5px; transition: 0.2s; width: auto; }
+        .btn-delete:hover { color: var(--danger); transform: scale(1.1); }
+        
+        .ai-response { background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; padding: 16px; border-radius: 14px; margin-top: 12px; font-size: 14px; line-height: 1.5; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="authScreen" class="auth-container">
+    <h2>🔐 Welcome Back</h2>
+    <p>Sign in to manage your AI financial logs</p>
+    <input type="text" id="authUser" placeholder="Username">
+    <input type="password" id="authPass" placeholder="Password">
+    <button class="btn-blue" onclick="handleAuth('login')">Sign In</button>
+    <button class="btn-orange" onclick="handleAuth('signup')">Create Free Account</button>
+    <div id="authError" style="color: var(--danger); margin-top: 12px; font-size: 13px; font-weight: 500;"></div>
+</div>
+
+<div id="appScreen" class="container hidden">
+    <div class="header-box">
+        <div>
+            <h2>📊 Dashboard</h2>
+            <div id="welcomeUser" style="color: var(--text-muted); font-size: 13px; margin-top: 2px;"></div>
+        </div>
+        <button class="btn-secondary" onclick="logout()">Logout</button>
+    </div>
+    
+    <div class="stat-card">
+        <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9;">Total Monthly Spend</div>
+        <div id="totalSpend" class="stat-number">₹0</div>
+    </div>
+
+    <div class="chart-box"><canvas id="expenseChart"></canvas></div>
+
+    <textarea id="userInput" placeholder="Ask AI anything or add logs... e.g., 'Spent 400 on dinner'"></textarea>
+    <div class="btn-group">
+        <button class="btn-blue" onclick="sendToAI()">+ Add Expense</button>
+        <button class="btn-green" onclick="askAI()">🤔 Ask AI Hisab</button>
+    </div>
+    
+    <div id="statusMessage" class="status"></div>
+    <div id="expenseList" style="margin-top: 10px;"></div>
+</div>
+
+<script>
+    let currentUsername = "";
+    let totalAmount = 0;
+    let categoryData = {};
+    let myChart = null;
+
+    async function handleAuth(type) {
+        const user = document.getElementById('authUser').value;
+        const pass = document.getElementById('authPass').value;
+        const errDiv = document.getElementById('authError');
+        if(!user || !pass) return alert("All fields are required!");
+
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/${type}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const result = await response.json();
+            if(response.ok) {
+                if(type === 'signup') { 
+                    alert("Account created successfully! Please Login."); 
+                } else {
+                    currentUsername = user;
+                    document.getElementById('authScreen').classList.add('hidden');
+                    document.getElementById('appScreen').classList.remove('hidden');
+                    document.getElementById('welcomeUser').innerText = `@${user}`;
+                    loadOldExpenses();
+                }
+            } else { errDiv.innerText = result.detail || "Authentication Failed!"; }
+        } catch (e) { errDiv.innerText = "Server connection lost!"; }
+    }
+
+    function logout() {
+        currentUsername = "";
+        document.getElementById('authScreen').classList.remove('hidden');
+        document.getElementById('appScreen').classList.add('hidden');
+        document.getElementById('authUser').value = "";
+        document.getElementById('authPass').value = "";
+    }
+
+    function updateChart() {
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        if (Object.keys(categoryData).length === 0) return;
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { 
+                labels: Object.keys(categoryData), 
+                datasets: [{ data: Object.values(categoryData), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899'] }] 
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Plus Jakarta Sans' } } } }, cutout: '70%' }
+        });
+    }
+
+    function addExpenseToTrack(category, amount) {
+        const cat = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        categoryData[cat] = (categoryData[cat] || 0) + parseInt(amount);
+        totalAmount += parseInt(amount);
+        document.getElementById('totalSpend').innerText = `₹${totalAmount}`;
+        updateChart();
+    }
+
+    async function loadOldExpenses() {
+        const listDiv = document.getElementById('expenseList');
+        listDiv.innerHTML = ""; totalAmount = 0; categoryData = {}; if(myChart) myChart.destroy();
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/get-all-expenses/${currentUsername}`);
+            const result = await response.json();
+            if(result.status === "success") {
+                result.data.forEach(exp => {
+                    const card = createExpenseCard(exp.id, exp.item, exp.amount, exp.category);
+                    listDiv.appendChild(card);
+                    addExpenseToTrack(exp.category, exp.amount);
+                });
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    async function sendToAI() {
+        const textInput = document.getElementById('userInput').value;
+        const statusDiv = document.getElementById('statusMessage');
+        const listDiv = document.getElementById('expenseList');
+        if(!textInput.trim()) return alert("Write something first!");
+        statusDiv.innerText = "⏳ AI Analysis in progress...";
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/add-expense', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textInput, username: currentUsername })
+            });
+            const result = await response.json();
+            if(result.status === "success") {
+                statusDiv.innerText = "";
+                result.data_saved.forEach(exp => {
+                    const card = createExpenseCard(exp.id, exp.item, exp.amount, exp.category);
+                    listDiv.insertBefore(card, listDiv.firstChild);
+                    addExpenseToTrack(exp.category, exp.amount);
+                });
+                document.getElementById('userInput').value = "";
+            }
+        } catch (error) { statusDiv.innerText = "❌ Neural Network Error!"; }
+    }
+
+    function createExpenseCard(id, item, amount, category) {
+        const card = document.createElement('div'); card.className = 'expense-card'; card.id = `expense-${id}`;
+        card.innerHTML = `<div><div class="item-name">🛍️ ${item}</div><span class="item-cat">${category}</span></div>
+            <div class="item-right"><div class="item-amt">₹${amount}</div><button class="btn-delete" onclick="deleteExpense(${id}, ${amount}, '${category}')">🗑️</button></div>`;
+        return card;
+    }
+
+    async function deleteExpense(id, amount, category) {
+        if(!confirm("Delete this log permanently?")) return;
+        try {
+            await fetch(`http://127.0.0.1:8000/delete-expense/${id}`, { method: 'DELETE' });
+            document.getElementById(`expense-${id}`).remove();
+            const cat = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+            categoryData[cat] -= amount; if(categoryData[cat] <= 0) delete categoryData[cat];
+            totalAmount -= amount; document.getElementById('totalSpend').innerText = `₹${totalAmount}`; updateChart();
+        } catch (e) { alert("Error!"); }
+    }
+
+    async function askAI() {
+        const textInput = document.getElementById('userInput').value;
+        const statusDiv = document.getElementById('statusMessage');
+        const listDiv = document.getElementById('expenseList');
+        if(!textInput.trim()) return alert("Ask something!");
+        statusDiv.innerText = "🤔 Querying AI Brain...";
+
+        try {
+            const response = await fetch('http://127.0.0.1:8000/ask-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textInput, username: currentUsername })
+            });
+            const result = await response.json();
+            if(result.status === "success") {
+                statusDiv.innerText = "";
+                const card = document.createElement('div'); card.className = 'ai-response';
+                card.innerHTML = `<div><strong>🤖 AI Insights:</strong> ${result.answer}</div>`;
+                listDiv.insertBefore(card, listDiv.firstChild);
+                document.getElementById('userInput').value = "";
+            }
+        } catch (error) { statusDiv.innerText = "❌ Generation Failed!"; }
+    }
+</script>
+</body>
+</html>
